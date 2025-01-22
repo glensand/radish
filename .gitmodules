@@ -1,0 +1,9 @@
+[submodule "third_party/hope-io"]
+	path = third_party/hope-io
+	url = https://github.com/glensand/hope-io
+[submodule "third_party/hope-logger"]
+	path = third_party/hope-logger
+	url = https://github.com/glensand/hope-logger
+[submodule "third_party/hope-threading"]
+	path = third_party/hope-threading
+	url = https://github.com/glensand/hope-threading
