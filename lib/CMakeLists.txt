@@ -8,11 +8,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/out)
 
 file(GLOB CL_HEADERS
-        /*.h
+        *.h
         core/*.h
 )
 file(GLOB CL_SOURCES
-        /*.cpp
+        *.cpp
         core/*.cpp
 )
 
@@ -25,7 +25,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC .)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/hope-logger/lib)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/hope-threading/lib)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/hope-io/lib)
-#target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/hope-core/lib)
+target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/hope-proto/lib)
+target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/hope-core/lib)
 
 target_link_libraries(${PROJECT_NAME} hope_logger)
 target_link_libraries(${PROJECT_NAME} hope_thread)

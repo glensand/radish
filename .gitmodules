@@ -7,3 +7,9 @@
 [submodule "third_party/hope-threading"]
 	path = third_party/hope-threading
 	url = https://github.com/glensand/hope-threading
+[submodule "third_party/hope-core"]
+	path = third_party/hope-core
+	url = https://github.com/glensand/hope-core
+[submodule "third_party/hope-proto"]
+	path = third_party/hope-proto
+	url = https://github.com/glensand/hope-proto

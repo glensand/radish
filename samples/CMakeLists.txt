@@ -17,7 +17,7 @@ foreach(source ${SAMPLE_CORE_SOURCES})
     target_include_directories(${target_name} PUBLIC ../lib)
 #    target_include_directories(${target_name} PUBLIC ${OPENSSL_INCLUDE_DIR})
     target_include_directories(${target_name} PUBLIC ../third-party/hope-io/lib)
-#    target_include_directories(${target_name} PUBLIC ../third-party/congenial-disco/lib)
+    target_include_directories(${target_name} PUBLIC ../third-party/hope-proto/lib)
 
     target_link_libraries(${target_name} PRIVATE radish-lib)
 
