@@ -13,10 +13,7 @@
 #include "hope-io/net/factory.h"
 #include "hope-io/net/init.h"
 
-#include "hope-io/proto/argument.h"
-#include "hope-io/proto/message.h"
-
-#include "kv_misc.h"
+#include "message.h"
 
 #include <iostream>
 #include <utility>

@@ -22,11 +22,11 @@ file(GLOB CL_SOURCES
 add_library(${PROJECT_NAME} STATIC ${CL_HEADERS} ${CL_SOURCES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC .)
-target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/hope-logger/lib)
-target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/hope-threading/lib)
-target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/hope-io/lib)
-target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/hope-proto/lib)
-target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/hope-core/lib)
+target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-logger/lib)
+target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-threading/lib)
+target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-io/lib)
+target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-proto/lib)
+target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-core/lib)
 
 target_link_libraries(${PROJECT_NAME} hope_logger)
 target_link_libraries(${PROJECT_NAME} hope_thread)

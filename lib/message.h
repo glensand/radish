@@ -6,21 +6,11 @@
  * this file. If not, please write to: bezborodoff.gleb@gmail.com, or visit : https://github.com/glensand/radish
  */
 
-// TODO:: wtf?
-#include "../third_party/hope-proto/lib/hope_proto/hope_proto.h"
-//#include "../third_party/hope-core/lib/hope_core/tuple/tuple_from_struct.h"
+#pragma once
 
-#include "hope_core/tuple/tuple_from_struct.h"
-#include "hope-io/net/stream.h"
+#include "kv_misc.h"
 
-using int32 = hope::proto::int32<hope::io::stream>;
-using uint64 = hope::proto::uint64<hope::io::stream>;
-using float64 = hope::proto::float64<hope::io::stream>;
-using string = hope::proto::string<hope::io::stream>;
-using argument_struct = hope::proto::argument_struct<hope::io::stream>;
-
-template<typename TValue>
-using array = hope::proto::array<hope::io::stream, TValue>;
+namespace radish {
 
 enum class message_type : uint8_t {
     set = 0,
@@ -35,12 +25,13 @@ struct get_request final {
         : key(std::move(in_key)) { }
 
     void write(hope::io::stream& stream) {
-        auto proto_msg = std::unique_ptr<hope::proto::argument>(
-        hope::proto::struct_builder::create()
-            .add<hope::proto::string>("key", key)
-            .add<hope::proto::int32>("type", int32_t(message_type::get))
-            .get("message"));
+        auto proto_msg = 
+            struct_builder::create()
+                .add<string>("key", key)
+                .add<int32>("type", int32_t(message_type::get))
+                .get("message"));
         proto_msg->write(stream);
+        delete proto_msg;
     }
 
 private:
@@ -49,11 +40,11 @@ private:
 
 struct set_request final {
     explicit set_request(std::string in_key) 
-        : key(std::move(in_key))
-        , value(in_value) { }
+        : key(std::move(in_key)) {}
 
+    template<typename TValue>
     void write(hope::io::stream& stream) {
-        auto proto_msg = std::unique_ptr<hope::proto::argument>(
+        auto proto_msg = std::unique_ptr<argument>(
             hope::proto::struct_builder::create()
                 .add<hope::proto::string>("key", key)
                 .add<hope::proto::int32>("type", int32_t(message_type::set))
@@ -68,40 +59,43 @@ private:
 };
 
 struct get_response final {
-    explicit get_response(std::string in_key = {}, hope::proto::argument* in_value = {}) 
-        : key(std::move(in_key))
-        , value(in_value) { }
+    explicit get_response(std::string in_key = {}) 
+        : key(std::move(in_key)) {}
 
-    void write(hope::io::stream& stream) {
-        auto proto_msg = std::unique_ptr<hope::proto::argument_struct>(
-            hope::proto::struct_builder::create()
-                .add<hope::proto::string>("key", key)
-                .add(value)
-                .get("message")
-        );
+    void write(hope::io::stream& stream, argument* in_value) {
+        auto proto_msg = 
+            struct_builder::create()
+                .add<string>("key", key)
+                .add(in_value)
+                .get("message");
         proto_msg->write(stream);
-        // NOTE:: hack
-        proto_msg->release(value);
+        proto_msg->release(in_value);
+        delete in_value;
     }
 
     void read(hope::io::stream& stream) {
-        auto proto_msg = std::unique_ptr<hope::proto::argument_struct>((hope::proto::argument_struct*)
-            hope::proto::argument_factory::serialize(stream));
+        auto proto_msg = std::unique_ptr<argument_struct>((argument_struct*)
+            hope::proto::serialize(stream));
         value = proto_msg->release("value");
         key = proto_msg->field<std::string>("key");
     }
 
+    template<typename TValue>
+    TValue get() const {
+        return {};
+    }
+
     std::string key;
-    hope::proto::argument* value = nullptr;
+    argument* value = nullptr;
 };
 
 struct set_response final {
-    bool bOk = false;
+    template<typename TValue>
     void write(hope::io::stream& stream) {
-        auto proto_msg = std::unique_ptr<hope::proto::argument>(
-        hope::proto::struct_builder::create()
-            .add<hope::proto::int32>("OK", (int32_t)bOk)
-            .get("message"));
+        auto proto_msg = std::unique_ptr<argument>(
+            struct_builder::create()
+                .add<hope::proto::int32>("OK", (int32_t)bOk)
+                .get("message"));
         proto_msg->write(stream);
     }
 
@@ -110,6 +104,7 @@ struct set_response final {
             hope::proto::argument_factory::serialize(stream));
         bOk = proto_msg->field<int32_t>("OK") != 0;
     }
-};
 
-void init();
+    bool bOk = false;
+};
+}
