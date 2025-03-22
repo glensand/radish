@@ -35,7 +35,7 @@ struct kv_service final {
                         const auto used_chunk = c.buffer->used_chunk();
                         const auto message_length = *(uint32_t*)(used_chunk.first);
                         if (message_length == used_chunk.second) {
-                            event_loop_stream_wrapper stream(*c.buffer); 
+                            radish::event_loop_stream_wrapper stream(*c.buffer); 
                             std::cout << "\n\n[";
                             auto used_part = c.buffer->used_chunk();
                             std::cout.write((char*)used_part.first, used_part.second);
