@@ -44,6 +44,7 @@ namespace radish {
             assert(length + front <= buffer_impl.size());
             std::memcpy((char*)data, buffer_impl.data() + front, length);
             front += length;
+            return length;
         }
 
         std::vector<uint8_t> buffer_impl;
@@ -63,56 +64,99 @@ namespace radish {
     using write_function_t = decltype(radish_custom_write(std::declval<const T&>(), std::declval<buffer&>()));
 
     template<typename T>
-    using read_function_t = decltype(radish_custom_read(std::declval<const T&>(), std::declval<buffer&>()));
+    using read_function_t = decltype(radish_custom_read(std::declval<T&>(), std::declval<buffer&>()));
 
+    // TODO:: probably serialization should be reconfigured
+    // we need to push value directly to argument and then serialize it directly to final buffer
+    // so, there should be implemented something like type eresure
     template<typename TValue>
     argument_blob* write(const TValue& val, const std::string& name) {
         buffer b;
         write_impl(val, b);
-        return new argument_blob(name, std::move(b.buffer_impl));
+        return new argument_blob(std::string(name), std::move(b.buffer_impl));
     }
 
     template<typename TValue>
     TValue read(argument_blob* arg) {
-        buffer b(std::move(arg.a));
+        buffer b(std::move(arg->get_buffer()));
+        TValue val;
         read_impl(val, b);
-        return new argument_blob(name, std::move(b.buffer_impl));
+        return val;
     }
 
+    // TODO:: do not split read and write function, we just can create load/save archive (like UE does it)
     template<typename TValue>
-    void write_impl(const TValue& val, buffer& b) {
-        auto&& tuple = hope::tuple_from_struct(val, hope::field_policy::reference);
-        for_each(tuple, [&b](const auto& field) {
+    void write_impl(const TValue& val, hope::io::stream& stream) {
+        auto&& tuple = hope::tuple_from_struct(val, hope::field_policy::reference{});
+        for_each(tuple, [&stream](const auto& field) {
             using field_t = std::decay_t<decltype(field)>;
             // custom serializer always have priority against other types
             if constexpr (hope::is_detected_v<write_function_t, field_t>) {
                 static_assert(hope::is_detected_v<read_function_t, field_t>, 
                     "radish/ both read and write functions need to be implemented");
-                radish_custom_write(field, b;)
+                radish_custom_write(field, stream);
             }
 
             if constexpr (
                 std::is_floating_point_v<field_t> || 
-                    std::is_integral_v<field_t>() || 
-                        hope::is_string_v<field_t) {
-                b.write(field);
+                    std::is_integral_v<field_t> || 
+                        hope::is_string_v<field_t>) {
+                stream.write(field);
                 return;
             }
             if constexpr (hope::is_vector_v<field_t>) {
-                b.write(field.size());
+                stream.write((uint16_t)field.size());
                 for (auto&& e : field) {
-                    write_impl(e, b);
+                    write_impl(e, stream);
                 }
                 return;
             }
             if constexpr (hope::is_array_v<field_t>) {
                 for (auto&& e : field) {
-                    write_impl(e, b);
+                    write_impl(e, stream);
                 }
                 return;
             }
             if constexpr (hope::is_user_defined_type_v<field_t>) {
-                write_impl(val, buffer);
+                write_impl(field, stream);
+            }
+        });
+    }
+
+    template<typename TValue>
+    void read_impl(TValue& val, hope::io::stream& stream) {
+        auto&& tuple = hope::tuple_from_struct(val, hope::field_policy::reference{});
+        for_each(tuple, [&stream](auto& field) {
+            using field_t = std::decay_t<decltype(field)>;
+            // custom serializer always have priority against other types
+            if constexpr (hope::is_detected_v<read_function_t, field_t>) {
+                static_assert(hope::is_detected_v<write_function_t, field_t>, 
+                    "radish/ both read and write functions need to be implemented");
+                radish_custom_read(field, stream);
+            }
+            if constexpr (
+                std::is_floating_point_v<field_t> || 
+                    std::is_integral_v<field_t> || 
+                        hope::is_string_v<field_t>) {
+                stream.read(field);
+                return;
+            }
+            if constexpr (hope::is_vector_v<field_t>) {
+                const auto size = stream.read<uint16_t>();
+                field.resize(size);
+                for (auto&& e : field) {
+                    read_impl(e, stream);
+                }
+                return;
+            }
+            if constexpr (hope::is_array_v<field_t>) {
+                for (auto&& e : field) {
+                    write_impl(e, stream);
+                }
+                return;
+            }
+            if constexpr (hope::is_user_defined_type_v<field_t>) {
+                read_impl(field, stream);
             }
         });
     }

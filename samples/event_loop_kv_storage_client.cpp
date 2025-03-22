@@ -13,9 +13,10 @@
 #include "hope-io/net/factory.h"
 #include "hope-io/net/init.h"
 
-#include "hope-io/proto/argument.h"
+#include "hope_proto/hope_proto.h"
 
 #include "kv_misc.h"
+#include "stream_wrapper.h"
 
 #include <iostream>
 #include <utility>
@@ -32,9 +33,12 @@ int main() {
         constexpr static auto num = 100;
         for (auto i = 0; i < num; ++i) {
             stream->connect("localhost", 1400);
-            set_request request(std::to_string(i), new hope::proto::int32("value", i));
+            radish::set::request request(std::to_string(i));
             buffer_wrapper.begin_write();
-            request.write(buffer_wrapper);
+            struct int_v final{
+                int v;
+            };
+            request.write(buffer_wrapper, int_v{ i });
             buffer_wrapper.end_write();
             auto used_part = buffer.used_chunk();
             stream->write(used_part.first, used_part.second);
@@ -42,7 +46,7 @@ int main() {
             // read responce
             uint32_t stub;
             stream->read(stub);
-            set_response{}.read(*stream);
+            radish::set::response{}.read(*stream);
             stream->disconnect();
             std::cout << "write:" << i << "\n";
         }
@@ -50,7 +54,7 @@ int main() {
         for (auto i = 0; i < num; ++i) {
             stream->connect("localhost", 1400);
             buffer.reset();
-            get_request request(std::to_string(i));
+            radish::get::request request(std::to_string(i));
             buffer_wrapper.begin_write();
             request.write(buffer_wrapper);
             buffer_wrapper.end_write();
@@ -60,7 +64,7 @@ int main() {
             // read responce
             uint32_t stub;
             stream->read(stub);
-            get_response r;
+            radish::get::response r;
             r.read(*stream);
             stream->disconnect();
 
