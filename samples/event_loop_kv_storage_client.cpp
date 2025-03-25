@@ -1,4 +1,4 @@
-/* Copyright (C) 2023 - 2025 Gleb Bezborodov - All Rights Reserved
+/* Copyright (C) 2025 Gleb Bezborodov - All Rights Reserved
  * You may use, distribute and modify this code under the
  * terms of the MIT license.
  *
@@ -29,16 +29,13 @@ int main() {
     try {
         // TODO:: buffer is not suitable for client...
         hope::io::event_loop::fixed_size_buffer buffer;
-        event_loop_stream_wrapper buffer_wrapper(buffer);
+        radish::event_loop_stream_wrapper buffer_wrapper(buffer);
         constexpr static auto num = 100;
         for (auto i = 0; i < num; ++i) {
             stream->connect("localhost", 1400);
             radish::set::request request(std::to_string(i));
             buffer_wrapper.begin_write();
-            struct int_v final{
-                int v;
-            };
-            request.write(buffer_wrapper, int_v{ i });
+            request.write(buffer_wrapper, i);
             buffer_wrapper.end_write();
             auto used_part = buffer.used_chunk();
             stream->write(used_part.first, used_part.second);
@@ -68,7 +65,7 @@ int main() {
             r.read(*stream);
             stream->disconnect();
 
-            std::cout << "read:" << i << r.value->as<int32_t>() << "\n";
+            std::cout << "read:" << i << r.get<int32_t>() << "\n";
         }
     }
     catch (const std::exception& ex) {

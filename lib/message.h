@@ -50,17 +50,17 @@ namespace radish {
             void read(hope::io::stream& stream) {
                 auto proto_msg = std::unique_ptr<argument_struct>((argument_struct*)
                     hope::proto::serialize(stream));
-                value = proto_msg->release("value");
+                value = (argument_blob*)proto_msg->release("value");
                 key = proto_msg->field<std::string>("key");
             }
 
             template<typename TValue>
             TValue get() const {
-                return {};
+                return radish::read<TValue>(value);
             }
-
+        private:    
             std::string key;
-            argument* value = nullptr;
+            argument_blob* value = nullptr;
         };
 
     }
@@ -73,7 +73,6 @@ namespace radish {
 
             template<typename TValue>
             void write(hope::io::stream& stream, TValue&& val) {
-                static_assert(std::is_class_v<TValue>, "Only POD structures are supported");
                 auto proto_msg = std::unique_ptr<argument>(
                     radish::struct_builder::create()
                         .add<radish::string>("key", key)
@@ -89,7 +88,6 @@ namespace radish {
         };
 
         struct response final {
-            template<typename TValue>
             void write(hope::io::stream& stream) {
                 auto proto_msg = std::unique_ptr<argument>(
                     struct_builder::create()

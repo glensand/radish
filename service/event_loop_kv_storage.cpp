@@ -14,7 +14,7 @@
 #include "hope-io/net/init.h"
 
 #include "message.h"
-
+#include "stream_wrapper.h"
 #include <iostream>
 #include <utility>
 #include <unordered_map>
@@ -41,30 +41,27 @@ struct kv_service final {
                             std::cout.write((char*)used_part.first, used_part.second);
                             std::cout << "]\n\n";
                             stream.begin_read();
-                            auto proto_msg = std::unique_ptr<hope::proto::argument_struct>((hope::proto::argument_struct*)
-                                hope::proto::argument_factory::serialize(stream));
+                            auto proto_msg = std::unique_ptr<radish::argument_struct>((radish::argument_struct*)
+                                hope::proto::serialize((hope::io::stream&)stream));
                             stream.end_read();
                             // TODO:: ensure all data were consumed
-                            auto type = (message_type)proto_msg->field<int32_t>("type");
-                            if (type != message_type::get && type != message_type::set) {
+                            auto type = proto_msg->field<std::string>("type");
+                            if (type != "get" && type != "set") {
                                 c.set_state(hope::io::event_loop::connection_state::die);
                                 assert(false);
                             }
                             else {
                                 auto&& key = proto_msg->field<std::string>("key");
                                 stream.begin_write();
-                                if (type == message_type::get) {
+                                if (type == "get") {
+                                    radish::get::response response{ key };
                                     const auto it = storage.find(key);
-                                    get_response response{ key, nullptr };
-                                    if (it != end(storage)) {
-                                        response.value = it->second.value;
-                                    }
-                                    response.write(stream);
+                                    response.write(stream, it != end(storage) ? it->second.value : nullptr);
                                 } else {
                                     auto&& entry = storage[key];
                                     delete entry.value;
                                     entry.value = proto_msg->release("value");
-                                    set_response response{ true };   
+                                    radish::set::response response{ true };   
                                     response.write(stream);
                                 }
                                 stream.end_write();
@@ -88,10 +85,7 @@ struct kv_service final {
     }
 
     struct entry final {
-        // TODO:: use it for optimization purposes
-        std::vector<uint8_t> serialized_value;
-
-        hope::proto::argument* value = nullptr;
+        radish::argument* value = nullptr;
     };
 
     // NOTE:: use argument as key?
