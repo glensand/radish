@@ -44,7 +44,6 @@ namespace radish {
                         .get("message");
                 proto_msg->write(stream);
                 proto_msg->release(in_value);
-                delete in_value;
             }
 
             void read(hope::io::stream& stream) {
