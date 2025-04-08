@@ -6,6 +6,7 @@ add_subdirectory(lib)
 add_subdirectory(samples)
 add_subdirectory(test)
 add_subdirectory(service)
+add_subdirectory(client)
 
 add_subdirectory(third_party/hope-logger/lib)
 add_subdirectory(third_party/hope-threading/lib)

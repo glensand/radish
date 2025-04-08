@@ -34,7 +34,7 @@ void do_client_stuff() {
         // TODO:: buffer is not suitable for client...
         hope::io::event_loop::fixed_size_buffer buffer;
         radish::event_loop_stream_wrapper buffer_wrapper(buffer);
-        constexpr static auto num = 10000;
+        constexpr static auto num = 1000;
         for (auto i = 0; i < num; ++i) {
             stream->connect("localhost", 1400);
             radish::set::request request(std::to_string(i));
@@ -97,6 +97,6 @@ int main() {
 
     // do clint stuff from parent processs as well
     do_client_stuff();
-    
+
     return 0;
 }

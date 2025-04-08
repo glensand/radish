@@ -12,7 +12,7 @@ file(GLOB SERVICE_SOURSES
 )
 
 add_executable(${PROJECT_NAME} ${SERVICE_HEADERS} ${SERVICE_SOURSES})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/build/bin)
 
 #find_package(OpenSSL REQUIRED)
 #include_directories(${OPENSSL_INCLUDE_DIR})
@@ -29,3 +29,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/easy_profiler/e
 
 target_link_libraries(${PROJECT_NAME} radish-lib)
 target_link_libraries(${PROJECT_NAME} easy_profiler)
+target_link_libraries(${PROJECT_NAME} hope_logger)
+target_link_libraries(${PROJECT_NAME} hope_thread)
+target_link_libraries(${PROJECT_NAME} hope-io)

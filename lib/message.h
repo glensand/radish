@@ -10,6 +10,11 @@
 
 #include "kv_misc.h"
 
+#include "easy/profiler.h"
+
+#define __STR__(s) #s
+#define NAMED_SCOPE(Name) EASY_BLOCK(__STR__(Name))
+
 namespace radish {
 
     namespace get {
@@ -19,12 +24,16 @@ namespace radish {
                 : key(std::move(in_key)) { }
 
             void write(hope::io::stream& stream) {
+                NAMED_SCOPE(Radish_Get_Request_Write);
                 auto proto_msg = 
                     struct_builder::create()
                         .add<string>("key", key)
                         .add<string>("type", "get")
                         .get("message");
-                proto_msg->write(stream);
+                {
+                    NAMED_SCOPE(Serialize);
+                    proto_msg->write(stream);
+                }
                 delete proto_msg;
             }
 
@@ -37,16 +46,21 @@ namespace radish {
                 : key(std::move(in_key)) {}
 
             void write(hope::io::stream& stream, argument* in_value) {
+                NAMED_SCOPE(Radish_Get_Response_Write);
                 auto proto_msg = 
                     struct_builder::create()
                         .add<string>("key", key)
                         .add(in_value)
                         .get("message");
-                proto_msg->write(stream);
+                {
+                    NAMED_SCOPE(Serialize);
+                    proto_msg->write(stream);
+                }
                 proto_msg->release(in_value);
             }
 
             void read(hope::io::stream& stream) {
+                NAMED_SCOPE(Radish_Get_Response_Read);
                 auto proto_msg = std::unique_ptr<argument_struct>((argument_struct*)
                     hope::proto::serialize(stream));
                 value = (argument_blob*)proto_msg->release("value");
@@ -72,6 +86,7 @@ namespace radish {
 
             template<typename TValue>
             void write(hope::io::stream& stream, TValue&& val) {
+                NAMED_SCOPE(Radish_Set_Request_Write);
                 auto proto_msg = std::unique_ptr<argument>(
                     radish::struct_builder::create()
                         .add<radish::string>("key", key)
@@ -88,11 +103,15 @@ namespace radish {
 
         struct response final {
             void write(hope::io::stream& stream) {
+                NAMED_SCOPE(Radish_Set_Response_Write);
                 auto proto_msg = std::unique_ptr<argument>(
                     struct_builder::create()
                         .add<radish::int32>("OK", (int32_t)bOk)
                         .get("message"));
-                proto_msg->write(stream);
+                {
+                    NAMED_SCOPE(Serialize)
+                    proto_msg->write(stream);
+                }
             }
 
             void read(hope::io::stream& stream) {

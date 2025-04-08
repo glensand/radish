@@ -11,23 +11,36 @@
 #include "hope_logger/logger.h"
 #include "hope_logger/ostream.h"
 
+#include <thread>
+#include <iostream>
+
 hope::log::logger* glob_logger = nullptr;
+std::thread worker;
 
 int main() {
+    EASY_PROFILER_ENABLE;
     THREAD_SCOPE(MAIN_THREAD);
     try {
         // TODO:: introduce console arguments, log parameters etc
         glob_logger = new hope::log::logger(
             *hope::log::create_multy_stream({
-                hope::log::create_file_stream("Radish.txt"),
-                hope::log::create_console_stream()
+                hope::log::create_file_stream("Radish.txt")
+                // hope::log::create_console_stream() put it under console variable
             })
         );
 
         LOG(INFO) << "Starting service";
-        radish::kv_service serv(1400);
+        radish::kv_service serv;
+        worker = std::thread([&]{
+            serv.serve(1400);
+        });
     } catch(const std::exception& e) {
         LOG(ERROR) << e.what();
     }
+    
+    int stub;
+    std::cin >> stub;
+    // TODO:: add timestamp
+    profiler::dumpBlocksToFile("service.prof");
     return 0;
 }

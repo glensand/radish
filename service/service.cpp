@@ -15,9 +15,13 @@
 
 namespace radish {
 
-    kv_service::kv_service(int32_t port) {
-        auto* loop = hope::io::create_event_loop();
+    kv_service::kv_service() {
+        loop = hope::io::create_event_loop();
         LOG(INFO) << "Created event loop";
+    }
+
+    void kv_service::serve(int32_t port) {
+        LOG(INFO) << "Run loop";
         loop->run(port, 
             hope::io::event_loop::callbacks {
                 [this] (auto&& c) {
@@ -36,6 +40,10 @@ namespace radish {
         );
     }
 
+    void kv_service::stop() {
+        loop->stop();
+    }
+
     void kv_service::on_create(hope::io::event_loop::connection &c) {
         // TODO:: add ip address to connection, or add method to resolve desriptor
         LOG(INFO) << "Created connection" << HOPE_VAL(c.descriptor);
@@ -48,10 +56,10 @@ namespace radish {
         if (stream.is_ready_to_read()) {
             std::unique_ptr<radish::argument_struct> proto_msg;
             {
-                NAMED_SCOPE(KV_OnRead_SerializeMessage);
-
                 auto used_part = c.buffer->used_chunk();
                 LOG(INFO) << "Got new message" << HOPE_VAL(std::string_view((char*)used_part.first, used_part.second));
+                
+                NAMED_SCOPE(KV_OnRead_SerializeMessage);
                 stream.begin_read();
                 proto_msg = std::unique_ptr<radish::argument_struct>((radish::argument_struct*)
                     hope::proto::serialize((hope::io::stream&)stream));

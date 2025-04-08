@@ -1,23 +1,15 @@
-cmake_minimum_required(VERSION 3.22)
-
-project(radish-lib)
+project(radish-client)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/out)
-
 file(GLOB CL_HEADERS
-        *.h
-        core/*.h
-)
-file(GLOB CL_SOURCES
-        *.cpp
-        core/*.cpp
+    *.h
 )
 
-#find_package(OpenSSL REQUIRED)
-#include_directories(${OPENSSL_INCLUDE_DIR})
+file(GLOB CL_SOURCES
+    *.cpp
+)
 
 add_library(${PROJECT_NAME} STATIC ${CL_HEADERS} ${CL_SOURCES})
 
@@ -29,4 +21,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-proto/lib)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-core/lib)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/easy_profiler/easy_profiler_core/include)
 
-#target_link_libraries(${PROJECT_NAME} ${OPENSSL_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} hope_logger)
+target_link_libraries(${PROJECT_NAME} hope_thread)
+target_link_libraries(${PROJECT_NAME} hope-io)
+
+target_link_libraries(${PROJECT_NAME} radish-lib)
+target_link_libraries(${PROJECT_NAME} easy_profiler)

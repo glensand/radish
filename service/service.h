@@ -17,8 +17,10 @@ namespace radish {
     
     class kv_service final {
     public:
-        explicit kv_service(int32_t port);
+        explicit kv_service();
 
+        void serve(int32_t port);
+        void stop();
     private:
         void on_create(hope::io::event_loop::connection& c);
         void on_read(hope::io::event_loop::connection& c);
@@ -30,6 +32,7 @@ namespace radish {
         };
 
         std::unordered_map<std::string, entry> storage;
+        hope::io::event_loop* loop = nullptr;
     };
 
 }
