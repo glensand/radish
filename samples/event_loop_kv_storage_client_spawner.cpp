@@ -15,6 +15,7 @@
 
 #include "serialization.h"
 #include "stream_wrapper.h"
+#include "foundation.h"
 
 #include <iostream>
 #include <utility>
@@ -26,6 +27,7 @@
 #include<sys/wait.h>
 
 void do_client_stuff() {
+    radish::init();
     hope::io::init();
     auto* stream = hope::io::create_stream();
     try {

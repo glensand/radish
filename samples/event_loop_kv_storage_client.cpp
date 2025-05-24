@@ -20,8 +20,10 @@
 #include <utility>
 #include <unordered_map>
 #include "message.h"
+#include "foundation.h"
 
 int main() {
+    radish::init();
     hope::io::init();
     auto* stream = hope::io::create_stream();
     try {
