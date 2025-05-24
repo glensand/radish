@@ -12,7 +12,5 @@ add_subdirectory(third_party/hope-logger/lib)
 add_subdirectory(third_party/hope-threading/lib)
 add_subdirectory(third_party/hope-io/lib)
 add_subdirectory(third_party/hope-core/lib)
-add_subdirectory(third_party/hope-proto/lib)
-add_subdirectory(third_party/easy_profiler)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

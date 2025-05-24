@@ -28,13 +28,7 @@ add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
                  ${CMAKE_CURRENT_BINARY_DIR}/googletest-build
                  EXCLUDE_FROM_ALL)
 
-# The gtest/gtest_main targets carry header search path
-# dependencies automatically when using CMake 2.8.11 or
-# later. Otherwise we have to add them here ourselves.
-if (CMAKE_VERSION VERSION_LESS 2.8.11)
-  include_directories("${gtest_SOURCE_DIR}/include" )
-endif()
-
+include_directories("${gtest_SOURCE_DIR}/include" )
 include_directories("../lib")
 add_definitions(-D_ENABLE_EXTENDED_ALIGNED_STORAGE=1)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -57,8 +51,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ../lib)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-logger/lib)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-threading/lib)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-io/lib)
-target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-proto/lib)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-core/lib)
-target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/easy_profiler/easy_profiler_core/include)
+#target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/easy_profiler/easy_profiler_core/include)
 
-target_link_libraries(${PROJECT_NAME} gtest_main radish-lib easy_profiler)
+target_link_libraries(${PROJECT_NAME} gtest_main radish-lib)

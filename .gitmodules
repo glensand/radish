@@ -10,9 +10,3 @@
 [submodule "third_party/hope-core"]
 	path = third_party/hope-core
 	url = https://github.com/glensand/hope-core
-[submodule "third_party/hope-proto"]
-	path = third_party/hope-proto
-	url = https://github.com/glensand/hope-proto
-[submodule "third_party/easy_profiler"]
-	path = third_party/easy_profiler
-	url = https://github.com/glensand/easy_profiler

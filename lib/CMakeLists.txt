@@ -9,11 +9,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/out)
 
 file(GLOB CL_HEADERS
         *.h
-        core/*.h
+        service/*.h
 )
 file(GLOB CL_SOURCES
         *.cpp
-        core/*.cpp
+        service/*.cpp
 )
 
 #find_package(OpenSSL REQUIRED)
@@ -25,8 +25,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC .)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-logger/lib)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-threading/lib)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-io/lib)
-target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-proto/lib)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-core/lib)
-target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/easy_profiler/easy_profiler_core/include)
+#target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/easy_profiler/easy_profiler_core/include)
 
 #target_link_libraries(${PROJECT_NAME} ${OPENSSL_LIBRARIES})

@@ -1,75 +1,72 @@
-#include "kv_misc.h"
+#include "serialization.h"
 #include "message.h"
 #include "stream_wrapper.h"
 #include "gtest/gtest.h"
 
 TEST(Serialization, GetRequest)
 {
-    radish::buffer b;
-    radish::get::request r("test_k");
-    r.write(b);
-    auto proto_msg = std::unique_ptr<radish::argument_struct>((radish::argument_struct*)
-        hope::proto::serialize((hope::io::stream&)b));
-    ASSERT_TRUE(proto_msg->field<std::string>("key") == "test_k");
-    ASSERT_TRUE(proto_msg->field<std::string>("type") == "get");
+    radish::get::request request{ "test_key"};
+    hope::io::event_loop::fixed_size_buffer buffer;
+    radish::event_loop_stream_wrapper stream(buffer);
+
+    stream.begin_write();
+    request.write(stream);
+    stream.end_write();
+
+    stream.begin_read();
+    radish::get::request read_request;
+    read_request.read(stream);
+    ASSERT_EQ(request.get_key(), read_request.get_key());
 }
 
-TEST(Serialization, GetResponce)
+TEST(Serialization, GetResponse)
 {
-    radish::buffer b;
+    radish::get::response response{"test_key"};
+    hope::io::event_loop::fixed_size_buffer buffer;
+    radish::event_loop_stream_wrapper stream(buffer);
 
-    struct v final {
-        int i;
-        float f;
-        std::string s;
-    };
+    stream.begin_write();
+    std::vector<uint8_t> test_value{1, 2, 3, 4};
+    response.write(stream, test_value);
+    stream.end_write();
 
-    v val{ 13, 13, "13" };
-    auto arg = radish::write(val, "value");
-    radish::get::response r("test_k");
-    r.write(b, arg);
-
-    radish::get::response resp;
-    resp.read(b);
-    auto&& new_v = resp.get<v>();
-
-    ASSERT_TRUE(val.i == new_v.i);
-    ASSERT_TRUE(val.f == new_v.f);
-    ASSERT_TRUE(val.s == new_v.s);
+    stream.begin_read();
+    radish::get::response read_response;
+    auto [value, ok] = read_response.read<std::vector<uint8_t>>(stream);
+    ASSERT_TRUE(ok);
+    ASSERT_EQ(test_value, value);
 }
 
 TEST(Serialization, SetRequest)
 {
-    radish::buffer b;
+    radish::set::request request;
+    hope::io::event_loop::fixed_size_buffer buffer;
+    radish::event_loop_stream_wrapper stream(buffer);
 
-    struct v final {
-        int i;
-        float f;
-        std::string s;
-    };
+    stream.begin_write();
+    std::vector<uint8_t> test_value{1, 2, 3, 4};
+    request.write(stream, "test_key", test_value);
+    stream.end_write();
 
-    v val{ 13, 13, "13" };
-    radish::set::request r("test_k");
-    r.write(b, val);
-
-    auto proto_msg = std::unique_ptr<radish::argument_struct>((radish::argument_struct*)
-        hope::proto::serialize((hope::io::stream&)b));
-    ASSERT_TRUE(proto_msg->field<std::string>("type") == "set");
-    auto value = (radish::argument_blob*)proto_msg->release("value");
-    auto new_v = radish::read<v>(value);
-    ASSERT_TRUE(val.i == new_v.i);
-    ASSERT_TRUE(val.f == new_v.f);
-    ASSERT_TRUE(val.s == new_v.s);
+    stream.begin_read();
+    radish::set::request read_request;
+    auto [key, val] = read_request.read(stream);
+    ASSERT_EQ(std::string("test_key"), key);
+    ASSERT_EQ(test_value, val);
 }
 
 TEST(Serialization, SetResponse)
 {
-    radish::buffer b;
-    radish::set::response r{ true };
-    r.write(b);
+    radish::set::response response;
+    hope::io::event_loop::fixed_size_buffer buffer;
+    radish::event_loop_stream_wrapper stream(buffer);
 
-    radish::set::response resp;
-    resp.read(b);
+    stream.begin_write();
+    response.write(stream);
+    stream.end_write();
 
-    ASSERT_TRUE(resp.bOk);
+    stream.begin_read();
+    radish::set::response read_response;
+    read_response.read(stream);
+
 }

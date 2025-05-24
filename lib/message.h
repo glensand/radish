@@ -8,35 +8,75 @@
 
 #pragma once
 
-#include "kv_misc.h"
+#include "serialization.h"
+#include <cstdint>
 
+#if 0
 #include "easy/profiler.h"
-
 #define __STR__(s) #s
 #define NAMED_SCOPE(Name) EASY_BLOCK(__STR__(Name))
+#else
+#define __STR__(s) #s
+#define NAMED_SCOPE(Name)
+#endif
+
+// Profiling macros for performance monitoring
+// Only enabled when profiling is turned on via #if 1
+
+// Defines the version and request type for all messages
+#define RADISH_MAJOR_VERSION 0
+#define RADISH_MINOR_VERSION 0 
+#define RADISH_PATCH_VERSION 0
 
 namespace radish {
 
+    // Request types supported by the radish key-value service:
+    // - get: Retrieves value for a given key
+    // - set: Stores a key-value pair
+    // - dump: Dumps entire key-value store (not implemented)
+
+    enum class e_request : uint8_t {
+        get, 
+        set, 
+        dump,
+    };
+
+    // Message header structure containing:
+    // - Version information (Major.Minor.Patch)
+    // - Request type (get/set/dump)
+    // Used to identify and route incoming messages
+
+    struct header_t final {
+        int8_t MajorVersion;
+        int8_t MinorVersion;
+        int8_t Patch;
+        e_request request;
+    };
+
     namespace get {
 
+        // Request message for retrieving a value by key
         struct request final {
-            explicit request(std::string in_key) 
-                : key(std::move(in_key)) { }
+            request(const std::string& in_key = "")
+                : key(in_key) {}
 
-            void write(hope::io::stream& stream) {
-                NAMED_SCOPE(Radish_Get_Request_Write);
-                auto proto_msg = 
-                    struct_builder::create()
-                        .add<string>("key", key)
-                        .add<string>("type", "get")
-                        .get("message");
-                {
-                    NAMED_SCOPE(Serialize);
-                    proto_msg->write(stream);
-                }
-                delete proto_msg;
+            constexpr static header_t get_header() {
+                return { RADISH_MAJOR_VERSION, RADISH_MINOR_VERSION, RADISH_PATCH_VERSION, e_request::get };
             }
 
+            template<typename TStream>
+            void write(TStream& stream) {
+                NAMED_SCOPE(Radish_Get_Request_Write);
+                write_impl(get_header(), stream);
+                write_impl(key, stream);
+            }
+
+            template<typename TStream>
+            void read(TStream& stream) {
+                read_impl(key, stream);
+            }
+
+            const auto& get_key() const noexcept { return key; }
         private:
             std::string key;
         };
@@ -45,35 +85,38 @@ namespace radish {
             explicit response(std::string in_key = {}) 
                 : key(std::move(in_key)) {}
 
-            void write(hope::io::stream& stream, argument* in_value) {
+            template<typename TStream>
+            void write(TStream& stream, const std::vector<uint8_t>& in_value) {
                 NAMED_SCOPE(Radish_Get_Response_Write);
-                auto proto_msg = 
-                    struct_builder::create()
-                        .add<string>("key", key)
-                        .add(in_value)
-                        .get("message");
-                {
-                    NAMED_SCOPE(Serialize);
-                    proto_msg->write(stream);
+                write_impl(key, stream);
+                // notify client that value is present
+                write_impl(!in_value.empty(), stream);
+                if (!in_value.empty()) {
+                    stream.write(in_value.data(), in_value.size());
                 }
-                proto_msg->release(in_value);
             }
 
-            void read(hope::io::stream& stream) {
+            /// Reads a response from the stream and returns a tuple containing the value and success flag
+            /// @tparam TStream The stream type to read from
+            /// @tparam TValue The type of value being read
+            /// @param stream The stream to read the response from
+            /// @return A tuple containing the read value and a boolean indicating if the value was present
+            template<typename TValue, typename TStream>
+            std::tuple<TValue, bool> read(TStream& stream) {
                 NAMED_SCOPE(Radish_Get_Response_Read);
-                auto proto_msg = std::unique_ptr<argument_struct>((argument_struct*)
-                    hope::proto::serialize(stream));
-                value = (argument_blob*)proto_msg->release("value");
-                key = proto_msg->field<std::string>("key");
+                TValue value;
+                read_impl(key, stream);
+                bool ok;
+                read_impl(ok, stream);
+                // if value is not present, client will not read it
+                if (ok) {
+                    read_impl(value, stream);
+                }
+                return std::make_tuple(std::move(value), ok);
             }
 
-            template<typename TValue>
-            TValue get() const {
-                return radish::read<TValue>(value);
-            }
         private:    
             std::string key;
-            argument_blob* value = nullptr;
         };
 
     }
@@ -81,46 +124,43 @@ namespace radish {
     namespace set {
 
         struct request final {
-            explicit request(std::string in_key) 
-                : key(std::move(in_key)) {}
-
-            template<typename TValue>
-            void write(hope::io::stream& stream, TValue&& val) {
-                NAMED_SCOPE(Radish_Set_Request_Write);
-                auto proto_msg = std::unique_ptr<argument>(
-                    radish::struct_builder::create()
-                        .add<radish::string>("key", key)
-                        .add<radish::string>("type", "set")
-                        .add(radish::write(val, "value"))
-                        .get("message")
-                );
-                proto_msg->write(stream);
+            constexpr static header_t get_header() {
+                return { RADISH_MAJOR_VERSION, RADISH_MINOR_VERSION, RADISH_PATCH_VERSION, e_request::set };
             }
 
-        private:
-            std::string key;
+            template<typename TValue, typename TStream>
+            void write(TStream& stream, const std::string& key, TValue&& val) {
+                NAMED_SCOPE(Radish_Set_Request_Write);
+                write_impl(get_header(), stream);
+                write_impl(key, stream);
+                write_impl(val, stream);
+            }
+
+            template<typename TStream>
+            std::tuple<std::string, std::vector<uint8_t>> read(TStream& stream) {
+                NAMED_SCOPE(Radish_Set_Request_Write);
+                std::string key;;
+                read_impl(key, stream);
+                auto payload_size = stream.count();
+                std::vector<uint8_t> payload(payload_size);
+                stream.read(payload.data(), payload_size);
+                return std::make_tuple(std::move(key), std::move(payload));
+            }
         };
 
         struct response final {
-            void write(hope::io::stream& stream) {
+            template<typename TStream>
+            void write(TStream& stream) {
                 NAMED_SCOPE(Radish_Set_Response_Write);
-                auto proto_msg = std::unique_ptr<argument>(
-                    struct_builder::create()
-                        .add<radish::int32>("OK", (int32_t)bOk)
-                        .get("message"));
-                {
-                    NAMED_SCOPE(Serialize)
-                    proto_msg->write(stream);
-                }
+                write_impl(true, stream);
             }
 
-            void read(hope::io::stream& stream) {
-                auto proto_msg = std::unique_ptr<radish::argument_struct>((radish::argument_struct*)
-                    hope::proto::serialize(stream));
-                bOk = proto_msg->field<int32_t>("OK") != 0;
+            template<typename TStream>
+            void read(TStream& stream) {
+                NAMED_SCOPE(Radish_Set_Response_Read);
+                bool ok;
+                read_impl(ok, stream);
             }
-
-            bool bOk = false;
         };
     }
 

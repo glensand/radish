@@ -6,7 +6,7 @@
  * this file. If not, please write to: bezborodoff.gleb@gmail.com, or visit : https://github.com/glensand/daedalus-proto-lib
  */
 
-#include "service.h"
+#include "service/service.h"
 #include "foundation.h"
 #include "hope_logger/logger.h"
 #include "hope_logger/ostream.h"
@@ -14,25 +14,17 @@
 #include <thread>
 #include <iostream>
 
-hope::log::logger* glob_logger = nullptr;
 std::thread worker;
 
 int main() {
-    EASY_PROFILER_ENABLE;
+    PROFILER_ENABLE;
     THREAD_SCOPE(MAIN_THREAD);
+    radish::init();
     try {
-        // TODO:: introduce console arguments, log parameters etc
-        glob_logger = new hope::log::logger(
-            *hope::log::create_multy_stream({
-                hope::log::create_file_stream("Radish.txt")
-                // hope::log::create_console_stream() put it under console variable
-            })
-        );
-
         LOG(INFO) << "Starting service";
-        radish::kv_service serv;
-        worker = std::thread([&]{
-            serv.serve(1400);
+        auto serv = radish::create_kv_service();
+        worker = std::thread([serv]{
+            serv->serve(1400);
         });
     } catch(const std::exception& e) {
         LOG(ERROR) << e.what();
@@ -41,6 +33,8 @@ int main() {
     int stub;
     std::cin >> stub;
     // TODO:: add timestamp
+#ifdef WITH_PROFILER
     profiler::dumpBlocksToFile("service.prof");
+#endif
     return 0;
 }
