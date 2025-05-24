@@ -13,9 +13,7 @@
 #include "hope-io/net/factory.h"
 #include "hope-io/net/init.h"
 
-#include "hope_proto/hope_proto.h"
-
-#include "kv_misc.h"
+#include "serialization.h"
 #include "stream_wrapper.h"
 
 #include <iostream>
@@ -33,9 +31,9 @@ int main() {
         constexpr static auto num = 100;
         for (auto i = 0; i < num; ++i) {
             stream->connect("localhost", 1400);
-            radish::set::request request(std::to_string(i));
+            radish::set::request request;
             buffer_wrapper.begin_write();
-            request.write(buffer_wrapper, i);
+            request.write(buffer_wrapper, std::to_string(i), i);
             buffer_wrapper.end_write();
             auto used_part = buffer.used_chunk();
             stream->write(used_part.first, used_part.second);
@@ -62,10 +60,10 @@ int main() {
             uint32_t stub;
             stream->read(stub);
             radish::get::response r;
-            r.read(*stream);
+            auto&& [val, _] = r.read<int>(*stream);
             stream->disconnect();
 
-            std::cout << "read:" << i << r.get<int32_t>() << "\n";
+            std::cout << "read:" << i << val << "\n";
         }
     }
     catch (const std::exception& ex) {

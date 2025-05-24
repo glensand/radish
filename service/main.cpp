@@ -30,9 +30,9 @@ int main() {
         );
 
         LOG(INFO) << "Starting service";
-        radish::kv_service serv;
-        worker = std::thread([&]{
-            serv.serve(1400);
+        auto serv = radish::create_kv_service();
+        worker = std::thread([serv]{
+            serv->serve(1400);
         });
     } catch(const std::exception& e) {
         LOG(ERROR) << e.what();

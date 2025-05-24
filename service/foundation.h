@@ -13,6 +13,11 @@
 
 extern hope::log::logger* glob_logger;
 
+#ifdef WITH_PROFILER
 #define __STR__(s) #s
 #define THREAD_SCOPE(ThreadName) EASY_THREAD_SCOPE(__STR__(ThreadName));
 #define NAMED_SCOPE(Name) EASY_BLOCK(__STR__(Name))
+#else
+#define THREAD_SCOPE(ThreadName)
+#define NAMED_SCOPE(Name)
+#endif

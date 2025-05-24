@@ -25,7 +25,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC .)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-logger/lib)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-threading/lib)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-io/lib)
-target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-proto/lib)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third_party/hope-core/lib)
 target_include_directories(${PROJECT_NAME} PUBLIC ../third-party/easy_profiler/easy_profiler_core/include)
 

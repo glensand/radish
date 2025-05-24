@@ -13,7 +13,7 @@
 
 namespace radish {
 
-    struct event_loop_stream_wrapper final : public hope::io::stream {
+    struct event_loop_stream_wrapper final {
         explicit event_loop_stream_wrapper(hope::io::event_loop::fixed_size_buffer& in_buffer)
             : buffer(in_buffer) { }
     
@@ -47,23 +47,54 @@ namespace radish {
 
         }
 
-        virtual void write(const void *data, std::size_t length) override {
+        void write(const void *data, std::size_t length) {
             buffer.write(data, length);
         }
 
-        virtual size_t read(void *data, std::size_t length) override {
+        size_t read(void *data, std::size_t length) {
             return buffer.read(data, length);
         }
+        
+        auto count() const noexcept { return buffer.count(); }
 
-        virtual std::string get_endpoint() const override { return {}; }
-        virtual int32_t platform_socket() const override { return {}; }
-        virtual void set_options(const hope::io::stream_options&) override {}
-        virtual void connect(std::string_view ip, std::size_t port) override {}
-        virtual void disconnect() override {}
-        virtual size_t read_once(void* data, std::size_t length) override { return 0u; }
-        virtual void stream_in(std::string& buffer) override {}
+        template<typename TValue>
+        void write(const TValue &val) {
+            static_assert(std::is_trivial_v<std::decay_t<TValue>>,
+                          "write(const TValue&) is only available for trivial types");
+            write(&val, sizeof(val));
+        }
+
+        template<typename TValue>
+        void read(TValue& val) {
+            static_assert(std::is_trivial_v <std::decay_t<TValue>> ,
+                          "read() is only available for trivial types");
+            read(&val, sizeof(val));
+        }
+
+        template<typename TValue>
+        TValue read() {
+            TValue val;
+            read(val);
+            return val;
+        }
+
     private:
         hope::io::event_loop::fixed_size_buffer& buffer;
     };
+
+    template <>
+    inline void event_loop_stream_wrapper::read<std::string>(std::string& val) {
+        const auto size = read<uint16_t>();
+        if (size > 0) { 
+            val.resize(size);
+            read(val.data(), size);
+        }
+    }
+
+    template <>
+    inline void event_loop_stream_wrapper::write<std::string>(const std::string& val) {
+        write((uint16_t)val.size());
+        write(val.c_str(), val.size());
+    }
 
 }
