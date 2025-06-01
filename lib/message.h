@@ -158,9 +158,12 @@ namespace radish {
             template<typename TStream>
             void read(TStream& stream) {
                 NAMED_SCOPE(Radish_Set_Response_Read);
-                bool ok;
-                read_impl(ok, stream);
+                read_impl(m_ok, stream);
             }
+
+            bool ok() const noexcept { return m_ok; }
+        private:
+            bool m_ok = false;
         };
     }
 

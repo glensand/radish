@@ -10,10 +10,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/out)
 file(GLOB CL_HEADERS
         *.h
         service/*.h
+        client/*.h
 )
 file(GLOB CL_SOURCES
         *.cpp
         service/*.cpp
+        client/*.cpp
 )
 
 #find_package(OpenSSL REQUIRED)
